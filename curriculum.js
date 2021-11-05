@@ -467,3 +467,5 @@ var curriculum = (function(curriculum){
 if (typeof module != 'undefined') {
     module.exports = curriculum;
 }
+
+//foo
