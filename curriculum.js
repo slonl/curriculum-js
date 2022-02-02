@@ -6,14 +6,14 @@ var curriculum = (function(curriculum){
 
     curriculum.schemas = {};
 
-	curriculum.schema = {};
+    curriculum.schema = {};
 
     curriculum.index = {
         id: {},
         type: {},
         schema: {},
-		references: {},
-		deprecated: {}
+        references: {},
+        deprecated: {}
     };
 
     curriculum.data = {};
@@ -27,15 +27,15 @@ var curriculum = (function(curriculum){
         return JSON.parse(JSON.stringify(ob));
     }
 
-	curriculum.parseSchema = function(schema) {
-		if (typeof $RefParser == 'undefined') {
-			console.error('json schema ref parser not loaded');
-			return;
-		}
-		if (typeof _ == 'undefined' ) {
-			console.error('lodash not loaded');
-			return;
-		}
+    curriculum.parseSchema = function(schema) {
+        if (typeof $RefParser == 'undefined') {
+            console.error('json schema ref parser not loaded');
+            return;
+        }
+        if (typeof _ == 'undefined' ) {
+            console.error('lodash not loaded');
+            return;
+        }
         var resolveAllOf = (function() {
             // from https://github.com/mokkabonna/json-schema-merge-allof
             var customizer = function (objValue, srcValue) {
@@ -61,11 +61,11 @@ var curriculum = (function(curriculum){
                 return inputSpec;
             }
         })();
-		return $RefParser.dereference(schema)
-		.then(function(schema) {
-			return resolveAllOf(schema);
-		});
-	}
+        return $RefParser.dereference(schema)
+        .then(function(schema) {
+            return resolveAllOf(schema);
+        });
+    }
 
     curriculum.loadContextFromURL = function(name, url) {
         curriculum.sources[name] = {
@@ -118,13 +118,13 @@ var curriculum = (function(curriculum){
     }
 
     curriculum.loadContextFromGithub = function(name, repository, user, password, branchName) {
-		if (!branchName) {
-			branchName = 'master';
-		}
+        if (!branchName) {
+            branchName = 'master';
+        }
         curriculum.sources[name] = {
             method: 'github',
             source: repository,
-			branch: branchName,
+            branch: branchName,
             state: 'loading'
         };
         var branchName = 'editor';
@@ -211,30 +211,30 @@ var curriculum = (function(curriculum){
         }
     };
 
-	function updateReferences(object) {
-		Object.keys(object).forEach(k => {
-			if (Array.isArray(object[k]) 
-				&& ( k.substr(k.length-3)=='_id'
-					|| k=='replaces'
-					|| k=='replacedBy')
-			) {
-				object[k].forEach(id => {
-					if (!curriculum.index.references[id]) {
-						curriculum.index.references[id] = [];
-					}
-					curriculum.index.references[id].push(object.id);
-				});
-			} else if (k.substr(k.length-3)=='_id'
-				&& typeof object[k]=='string'
-			) {
-				var id = object[k];
-				if (!curriculum.index.references[id]) {
-					curriculum.index.references[id] = [];
-				}
-				curriculum.index.references[id].push(object.id);
-			}
-		});
-	}
+    function updateReferences(object) {
+        Object.keys(object).forEach(k => {
+            if (Array.isArray(object[k]) 
+                && ( k.substr(k.length-3)=='_id'
+                    || k=='replaces'
+                    || k=='replacedBy')
+            ) {
+                object[k].forEach(id => {
+                    if (!curriculum.index.references[id]) {
+                        curriculum.index.references[id] = [];
+                    }
+                    curriculum.index.references[id].push(object.id);
+                });
+            } else if (k.substr(k.length-3)=='_id'
+                && typeof object[k]=='string'
+            ) {
+                var id = object[k];
+                if (!curriculum.index.references[id]) {
+                    curriculum.index.references[id] = [];
+                }
+                curriculum.index.references[id].push(object.id);
+            }
+        });
+    }
 
     curriculum.loadData = function(name) {
         var schema = curriculum.schemas[name];
@@ -287,22 +287,22 @@ var curriculum = (function(curriculum){
             }
         });
 
-		var deleted = [];
+        var deleted = [];
         return Promise.all(Object.values(data))
         .then(function(results) {
             Object.keys(data).forEach(function(propertyName) {
                 if (/deprecated/.exec(propertyName)) {
-					data[propertyName].then(function(entities) {
-						if (!curriculum.data.deprecated) {
-							curriculum.data.deprecated = [];
-						}
-						curriculum.data.deprecated = curriculum.data.deprecated.concat(entities);
-						entities.forEach(function(entity) {
-							if (entity.id) {
-								curriculum.index.deprecated[entity.id] = entity;
-							}
-						});
-					});
+                    data[propertyName].then(function(entities) {
+                        if (!curriculum.data.deprecated) {
+                            curriculum.data.deprecated = [];
+                        }
+                        curriculum.data.deprecated = curriculum.data.deprecated.concat(entities);
+                        entities.forEach(function(entity) {
+                            if (entity.id) {
+                                curriculum.index.deprecated[entity.id] = entity;
+                            }
+                        });
+                    });
                     return;
                 }
                 data[propertyName].then(function(entities) {
@@ -313,32 +313,32 @@ var curriculum = (function(curriculum){
                     }
                     Array.prototype.push.apply(curriculum.data[propertyName],entities);
 
-					if (!curriculum.schema[name]) {
-						curriculum.schema[name] = {};
-					}
-					if (!curriculum.schema[name][propertyName]) {
-						curriculum.schema[name][propertyName] = [];
-					}
-					Array.prototype.push.apply(curriculum.schema[name][propertyName],entities);
+                    if (!curriculum.schema[name]) {
+                        curriculum.schema[name] = {};
+                    }
+                    if (!curriculum.schema[name][propertyName]) {
+                        curriculum.schema[name][propertyName] = [];
+                    }
+                    Array.prototype.push.apply(curriculum.schema[name][propertyName],entities);
 
                     var count = 0;
                     entities.forEach(function(entity) {
                         if (entity.id) {
                             if (curriculum.index.id[entity.id]) {
                                 curriculum.errors.push('Duplicate id in '+name+'.'+propertyName+': '+entity.id);
-							} else if (entity.deleted==1 || entity.deleted==true) {
-								entity.types = [ propertyName ];
-								entity.replacedBy = [];
-								curriculum.index.id[entity.id] = entity;
-								curriculum.index.type[entity.id] = 'deprecated';
-								curriculum.index.schema[entity.id] = name;
-								updateReferences(entity);
-								deleted.push(entity.id);
+                            } else if (entity.deleted==1 || entity.deleted==true) {
+                                entity.types = [ propertyName ];
+                                entity.replacedBy = [];
+                                curriculum.index.id[entity.id] = entity;
+                                curriculum.index.type[entity.id] = 'deprecated';
+                                curriculum.index.schema[entity.id] = name;
+                                updateReferences(entity);
+                                deleted.push(entity.id);
                             } else {
                                 curriculum.index.id[entity.id] = entity;
                                 curriculum.index.type[entity.id] = propertyName;
                                 curriculum.index.schema[entity.id] = name;
-								updateReferences(entity);
+                                updateReferences(entity);
                             }
                         } else {
                             curriculum.errors.push('Missing id in '+name+'.'+propertyName+': '+count);
@@ -349,23 +349,23 @@ var curriculum = (function(curriculum){
             });
             return data;
         })
-		.then(function() {
-			// returns arr1 with only ids that are not in arr2
-			var arrayDiff = function(arr1, arr2) {
-				return arr1.filter(function(id) {
-					return arr2.indexOf(id)===-1;
-				});
-			};
-			Object.keys(curriculum.data).forEach(function(propertyName) {
-				curriculum.data[propertyName].forEach(function(entity) {
-					Object.keys(entity).forEach(function(prop) {
-						if (prop.substr(-3)=='_id' && Array.isArray(entity[prop])) {
-							entity[prop] = arrayDiff(entity[prop], deleted);
-						}
-					});
-				});
-			});
-		});
+        .then(function() {
+            // returns arr1 with only ids that are not in arr2
+            var arrayDiff = function(arr1, arr2) {
+                return arr1.filter(function(id) {
+                    return arr2.indexOf(id)===-1;
+                });
+            };
+            Object.keys(curriculum.data).forEach(function(propertyName) {
+                curriculum.data[propertyName].forEach(function(entity) {
+                    Object.keys(entity).forEach(function(prop) {
+                        if (prop.substr(-3)=='_id' && Array.isArray(entity[prop])) {
+                            entity[prop] = arrayDiff(entity[prop], deleted);
+                        }
+                    });
+                });
+            });
+        });
     };
 
     curriculum.getSchemaFromType = function(type) {
