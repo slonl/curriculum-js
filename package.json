@@ -1,0 +1,29 @@
+{
+  "name": "curriculum-js",
+  "version": "0.0.1",
+  "description": "library to work with slonl/curriculum datasets",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/slonl/curriculum-js.git"
+  },
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/slonl/curriculum-js/issues"
+  },
+  "homepage": "https://github.com/slonl/curriculum-js#readme",
+  "devDependencies": {
+    "eslint": "^8.10.0"
+  },
+  "dependencies": {
+    "@apidevtools/json-schema-ref-parser": "^9.0.9",
+    "@octokit/rest": "^18.12.0",
+    "jsondiffpatch": "^0.4.1",
+    "lodash": "^4.17.21",
+    "uuidv4": "^6.2.12"
+  }
+}
