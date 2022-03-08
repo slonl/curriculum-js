@@ -1,8 +1,8 @@
 import jsondiffpatch from 'jsondiffpatch'
-import uuid from 'uuidv4'
-import $RefParser from "@apidevtools/json-schema-ref-parser"
+import { v4 } from 'uuid'
+import $RefParser from "json-schema-ref-parser"
 import _ from 'lodash'
-import Octokit from "@octokit/rest"
+import { Octokit } from "@octokit/rest"
 
 function envIsNode()
 {
@@ -15,7 +15,7 @@ if (envIsNode()) {
 	const fs    = require('fs')
 }
 
-export class Curriculum {
+export default class Curriculum {
 
 	constructor()
 	{
@@ -74,7 +74,7 @@ export class Curriculum {
 
 	uuid()
 	{
-		return uuid()
+		return v4()
 	}
 
 	updateReferences(object)
@@ -542,7 +542,6 @@ export class Curriculum {
 
 	exportFiles(schema, schemaName, dir='')
 	{
-		const fs         = require('fs');
 		const properties = Object.keys(schema.properties);
 		
 		properties.forEach(function(propertyName) {

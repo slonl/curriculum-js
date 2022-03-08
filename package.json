@@ -1,8 +1,9 @@
 {
   "name": "curriculum-js",
+  "type": "module",
   "version": "0.0.1",
   "description": "library to work with slonl/curriculum datasets",
-  "main": "index.js",
+  "main": "dist/curriculum.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -17,13 +18,36 @@
   },
   "homepage": "https://github.com/slonl/curriculum-js#readme",
   "devDependencies": {
-    "eslint": "^8.10.0"
+    "buffer": "^6.0.3",
+    "eslint": "^8.10.0",
+    "events": "^3.3.0",
+    "https-browserify": "^1.0.0",
+    "parcel": "^2.3.2",
+    "process": "^0.11.10",
+    "querystring-es3": "^0.2.1",
+    "stream-http": "^3.2.0",
+    "url": "^0.11.0",
+    "util": "^0.12.4"
   },
   "dependencies": {
     "@apidevtools/json-schema-ref-parser": "^9.0.9",
     "@octokit/rest": "^18.12.0",
+    "json-schema-ref-parser": "^9.0.9",
     "jsondiffpatch": "^0.4.1",
     "lodash": "^4.17.21",
-    "uuidv4": "^6.2.12"
+    "node-fetch": "^2.6.7",
+    "uuid": "^8.3.2"
+  },
+  "targets": {
+    "regular": {
+      "source": "src/browser.js",
+      "context": "browser",
+      "includeNodeModules": true
+    },
+    "node": {
+      "source": "src/curriculum.js",
+      "context": "node",
+      "isLibrary": true
+    }
   }
 }
