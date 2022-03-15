@@ -4,17 +4,8 @@ import $RefParser from "json-schema-ref-parser"
 import _ from 'lodash'
 import { Octokit } from "@octokit/rest"
 import Ajv from 'ajv'
-
-function envIsNode()
-{
-    var isNode = new Function("try { return this===global; } catch(e) { return false; }")
-    return isNode();        
-}
-
-if (envIsNode()) {
-    const fetch = require('node-fetch')
-    const fs    = require('fs')
-}
+import fetch from 'cross-fetch'
+import fs from 'fs'
 
 if (!atob) {
     var atob = (base64) => {
@@ -77,6 +68,12 @@ export default class Curriculum {
          * The schema data by schema name
          */
         this.schema  = {}
+    }
+
+    envIsNode()
+    {
+        var isNode = new Function("try { return this===global; } catch(e) { return false; }")
+        return isNode();        
     }
 
     uuid()
