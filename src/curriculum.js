@@ -15,6 +15,12 @@ if (envIsNode()) {
     const fs    = require('fs')
 }
 
+if (!atob) {
+    var atob = (base64) => {
+        return Buffer.from(base64, 'base64').toString('binary');
+    };
+}
+
 export default class Curriculum {
 
     constructor()
