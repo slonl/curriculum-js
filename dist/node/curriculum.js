@@ -34,47 +34,51 @@ if ($57ffaf843300749d$var$envIsNode()) {
     const fetch = $hPuiw$nodefetch;
     const fs = $hPuiw$fs;
 }
+if (!$57ffaf843300749d$var$atob) var $57ffaf843300749d$var$atob = (base64)=>{
+    return Buffer.from(base64, 'base64').toString('binary');
+};
 class $57ffaf843300749d$export$2e2bcd8739ae039 {
     constructor(){
         /**
-		 * Keeps track of the source of all schemas (file, github, url, etc)
-		 */ this.sources = {
+         * Keeps track of the source of all schemas (file, github, url, etc)
+         */ this.sources = {
         };
         /**
-		 * Contains entities by type
-		 */ this.data = {
+         * Contains entities by type
+         */ this.data = {
         };
         /**
-		 * List of errors found with loadData()
-		 */ this.errors = [];
+         * List of errors found with loadData()
+         */ this.errors = [];
         this.index = {
             /**
-			 * All non-deprecated entities by id
-			 */ id: {
+             * All non-deprecated entities by id
+             */ id: {
             },
             /**
-			 * Type by id
-			 */ type: {
+             * Type by id
+             */ type: {
             },
             /**
-			 * Schema by id
-			 */ schema: {
+             * Schema by id
+             */ schema: {
             },
             /**
-			 * References to other entities by id
-			 */ references: {
+             * References to other entities by id
+             */ references: {
             },
             /**
-			 * Deprecated entities by id
-			 */ deprecated: {
+             * Deprecated entities by id
+             */ deprecated: {
             }
         };
         /**
-		 * An array of all the schemas as json
-		 */ this.schemas = [];
+         * An list of all the schemas as json, by name
+         */ this.schemas = {
+        };
         /**
-		 * The schemas by schema name
-		 */ this.schema = {
+         * The schema data by schema name
+         */ this.schema = {
         };
     }
     uuid() {
@@ -135,11 +139,11 @@ class $57ffaf843300749d$export$2e2bcd8739ae039 {
         return entity.id;
     }
     /**
-	 * Replace an entity with a new entity
-	 * Find all links to the old entity and replace the links
-	 * add replacedBy in old entity
-	 * add replaces in new entity
-	 */ replace(id, newId) {
+     * Replace an entity with a new entity
+     * Find all links to the old entity and replace the links
+     * add replacedBy in old entity
+     * add replaces in new entity
+     */ replace(id, newId) {
         var oldObject = this.index.id[id];
         var section = this.index.type[id];
         if (section == 'deprecated') throw new Error('refusing to replace ' + id + ' that is already deprecated');
@@ -201,7 +205,7 @@ class $57ffaf843300749d$export$2e2bcd8739ae039 {
     getParentSections(section) {
         var parentSections = [];
         var parentProperty = this.getParentProperty(section);
-        this.schemas.forEach((schema)=>{
+        Object.values(this.schemas).forEach((schema)=>{
             Object.keys(schema.definitions).forEach((schemaSection)=>{
                 if (typeof schema.definitions[schemaSection].properties != 'undefined' && typeof schema.definitions[schemaSection].properties[parentProperty] != 'undefined' && schemaSection != 'deprecated') parentSections.push(schemaSection);
             });
@@ -245,7 +249,7 @@ class $57ffaf843300749d$export$2e2bcd8739ae039 {
         });
     }
     async loadData(schemaName) {
-        const schema = curriculum.schemas[name];
+        const schema = this.schemas[schemaName];
         let data1 = {
         };
         const properties = Object.keys(schema.properties);
@@ -253,11 +257,11 @@ class $57ffaf843300749d$export$2e2bcd8739ae039 {
             console.warning('No properties defined in context ' + schemaName);
             return data1;
         }
-        properties.forEach(function(propertyName) {
+        properties.forEach((propertyName)=>{
             if (typeof schema.properties[propertyName]['#file'] != 'undefined') data1[propertyName] = (()=>{
-                switch(this.sources[name].method){
+                switch(this.sources[schemaName].method){
                     case 'url':
-                        var baseURL = dirname(this.sources[name].source);
+                        var baseURL = dirname(this.sources[schemaName].source);
                         return fetch(baseURL + schema.properties[propertyName]['#file']).then((response)=>{
                             if (response.ok) return response.json();
                             throw new NetworkError(response.status + ': ' + response.statusText, {
@@ -265,7 +269,7 @@ class $57ffaf843300749d$export$2e2bcd8739ae039 {
                             });
                         });
                     case 'file':
-                        var baseDir = dirname(curriculum.sources[name].source);
+                        var baseDir = dirname(this.sources[schemaName].source);
                         if (!this.envIsNode()) return new Promise((resolve, reject)=>{
                             reject({
                                 message: 'Filesystem support is limited to node-js'
@@ -276,13 +280,13 @@ class $57ffaf843300749d$export$2e2bcd8739ae039 {
                                 if (err) reject(err);
                                 else resolve(data);
                             });
-                        }).then(function(result) {
-                            return JSON.parse(result);
-                        });
+                        }).then((data)=>JSON.parse(data)
+                        );
                     case 'github':
-                        return this.sources[name].getFile(schema.properties[propertyName]['#file']);
+                        return this.sources[schemaName].getFile(schema.properties[propertyName]['#file']).then((data)=>JSON.parse(data)
+                        );
                     default:
-                        throw new Error('Unknown loading method ' + curriculum.sources[name].method);
+                        throw new Error('Unknown loading method ' + this.sources[schemaName].method);
                 }
             })();
             else {
@@ -294,30 +298,43 @@ class $57ffaf843300749d$export$2e2bcd8739ae039 {
             Object.keys(data1).forEach((propertyName)=>{
                 data1[propertyName].then((entities)=>{
                     console.log('index size ' + Object.keys(this.index.id).length);
-                    console.log('indexing ' + name + '.' + propertyName + ' (' + entities.length + ')');
+                    console.log('indexing ' + schemaName + '.' + propertyName + ' (' + entities.length + ')');
                     if (!this.data[propertyName]) this.data[propertyName] = [];
                     Array.prototype.push.apply(this.data[propertyName], entities);
-                    if (!this.schema[name]) this.schema[name] = {
+                    if (!this.schema[schemaName]) this.schema[schemaName] = {
                     };
-                    if (!this.schema[name][propertyName]) this.schema[name][propertyName] = [];
-                    Array.prototype.push.apply(this.schema[name][propertyName], entities);
+                    if (!this.schema[schemaName][propertyName]) this.schema[schemaName][propertyName] = [];
+                    Array.prototype.push.apply(this.schema[schemaName][propertyName], entities);
                     var count = 0;
                     entities.forEach((entity)=>{
                         if (entity.id) {
-                            if (this.index.id[entity.id]) this.errors.push('Duplicate id in ' + name + '.' + propertyName + ': ' + entity.id);
+                            if (this.index.id[entity.id]) this.errors.push('Duplicate id in ' + schemaName + '.' + propertyName + ': ' + entity.id);
                             else {
                                 this.index.id[entity.id] = entity;
                                 this.index.type[entity.id] = propertyName;
-                                this.index.schema[entity.id] = name;
-                                updateReferences(entity);
+                                this.index.schema[entity.id] = schemaName;
+                                this.updateReferences(entity);
                                 if (/deprecated/.exec(propertyName) !== null) this.index.deprecated[entity.id] = entity;
                             }
-                        } else this.errors.push('Missing id in ' + name + '.' + propertyName + ': ' + count);
+                        } else this.errors.push('Missing id in ' + schemaName + '.' + propertyName + ': ' + count);
                         count++;
                     });
                 });
             });
             return data1;
+        });
+    }
+    updateReferences(object) {
+        Object.keys(object).forEach((k)=>{
+            if (Array.isArray(object[k]) && k.substr(k.length - 3) == '_id') object[k].forEach((id)=>{
+                if (!this.index.references[id]) this.index.references[id] = [];
+                this.index.references[id].push(object.id);
+            });
+            else if (k.substr(k.length - 3) == '_id' && typeof object[k] == 'string') {
+                var id = object[k];
+                if (!this.index.references[id]) this.index.references[id] = [];
+                this.index.references[id].push(object.id);
+            }
         });
     }
     async loadContextFromFile(schemaName, fileName) {
@@ -334,7 +351,7 @@ class $57ffaf843300749d$export$2e2bcd8739ae039 {
                 cause: error
             });
         }
-        this.schemas.push(schema);
+        this.schemas[schemaName] = schema;
         this.schema[schemaName] = {
         };
         await this.loadData(schemaName);
@@ -355,14 +372,14 @@ class $57ffaf843300749d$export$2e2bcd8739ae039 {
                 cause: error
             });
         }
-        this.schemas.push(schema);
+        this.schemas[schemaName] = schema;
         this.schema[schemaName] = {
         };
         await this.loadData(schemaName);
         this.sources[schemaName].state = 'available';
         return schema;
     }
-    async loadContextFromGithub(schemaName, repository, owner, branchName) {
+    async loadContextFromGithub(schemaName, repository, owner, branchName, authToken = null) {
         if (!branchName) branchName = 'master';
         this.sources[schemaName] = {
             method: 'github',
@@ -370,7 +387,10 @@ class $57ffaf843300749d$export$2e2bcd8739ae039 {
             branch: branchName,
             state: 'loading'
         };
-        const octokit = new $hPuiw$octokitrest.Octokit();
+        let options = {
+        };
+        if (authToken) options.auth = authToken;
+        const octokit = new $hPuiw$octokitrest.Octokit(options);
         var getFile = function(filename, list1) {
             const nodes = filename.split('/');
             let node = nodes.shift();
@@ -389,6 +409,7 @@ class $57ffaf843300749d$export$2e2bcd8739ae039 {
                 repo: repository,
                 file_sha: hash
             }).then((data)=>data.data
+            ).then((data)=>$57ffaf843300749d$var$atob(data.content)
             );
         };
         this.sources[schemaName].repository = repository;
@@ -407,14 +428,14 @@ class $57ffaf843300749d$export$2e2bcd8739ae039 {
             return getFile(filename, tree);
         };
         const context = await this.sources[schemaName].getFile('context.json');
+        var schema = '';
         try {
-            const schema = JSON.parse(context);
-        } catch (error) {
-            throw new SyntaxError('JSON Parse error in ' + schemaName, {
-                cause: error
-            });
+            schema = JSON.parse(context);
+        } catch (e) {
+            console.error('Incorrect json: ', context);
+            throw new SyntaxError('Incorrect JSON in ' + schemaName + ' context.json');
         }
-        this.schemas.push(schema);
+        this.schemas[schemaName] = schema;
         this.schema[schemaName] = {
         };
         await this.loadData(schemaName);
