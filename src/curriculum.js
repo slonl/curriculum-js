@@ -3,6 +3,7 @@ import { v4 } from 'uuid'
 import $RefParser from "json-schema-ref-parser"
 import _ from 'lodash'
 import { Octokit } from "@octokit/rest"
+import Ajv from 'ajv'
 
 function envIsNode()
 {
@@ -108,7 +109,43 @@ export default class Curriculum {
             }
         })
     }
-    
+
+    validate()
+    {
+        const ajv = new Ajv({
+            'extendRefs': true,
+            'allErrors': true,
+            'jsonPointers': true
+        })
+        ajv.addKeyword('itemTypeReference', {
+            validate: (schema, data, parentSchema, dataPath, parentData, propertyName, rootData) => {
+                var matches = /.*\#\/definitions\/(.*)/g.exec(schema);
+                if (matches) {
+                    var result = this.index.type[data] == matches[1];
+                    return result;
+                }
+                console.log('Unknown #ref definition: '+schema);
+            }
+        });
+        const schemaBaseURL  = 'https://opendata.slo.nl/curriculum/schemas/';
+        Object.keys(this.schemas).forEach(schemaName => {
+            ajv.addSchema(this.schemas[schemaName], schemaBaseURL+schemaName+'/context.json')
+        })
+        var errors = {}
+        var valid = true
+        Object.keys(this.schemas).forEach(schemaName => {
+            if (!ajv.validate(schemaBaseURL+schemaName+'/context.json', this.data)) {
+                errors[schemaName] = ajv.errors
+                valid = false
+            }
+        })
+        if (!valid) {
+            return errors
+        } else {
+            return true
+        }
+    }
+
     add(schemaName, section, object) 
     {
         if (!object.id) {
@@ -449,29 +486,6 @@ export default class Curriculum {
             return data
         })
     }
-
-	updateReferences(object) {
-		Object.keys(object).forEach(k => {
-			if (Array.isArray(object[k]) 
-				&& k.substr(k.length-3)=='_id'
-			) {
-				object[k].forEach(id => {
-					if (!this.index.references[id]) {
-						this.index.references[id] = [];
-					}
-					this.index.references[id].push(object.id);
-				});
-			} else if (k.substr(k.length-3)=='_id'
-				&& typeof object[k]=='string'
-			) {
-				var id = object[k];
-				if (!this.index.references[id]) {
-					this.index.references[id] = [];
-				}
-				this.index.references[id].push(object.id);
-			}
-		})
-	}
 
     async loadContextFromFile(schemaName, fileName)
     {

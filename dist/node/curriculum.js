@@ -5,6 +5,7 @@ var $hPuiw$lodash = require("lodash");
 var $hPuiw$octokitrest = require("@octokit/rest");
 var $hPuiw$nodefetch = require("node-fetch");
 var $hPuiw$fs = require("fs");
+var $hPuiw$ajv = require("ajv");
 
 function $parcel$interopDefault(a) {
   return a && a.__esModule ? a.default : a;
@@ -19,6 +20,7 @@ function $parcel$export(e, n, v, s) {
 $parcel$defineInteropFlag(module.exports);
 
 $parcel$export(module.exports, "default", () => $57ffaf843300749d$export$2e2bcd8739ae039);
+
 
 
 
@@ -96,6 +98,38 @@ class $57ffaf843300749d$export$2e2bcd8739ae039 {
                 this.index.references[id].push(object.id);
             }
         });
+    }
+    validate() {
+        const ajv = new ($parcel$interopDefault($hPuiw$ajv))({
+            'extendRefs': true,
+            'allErrors': true,
+            'jsonPointers': true
+        });
+        ajv.addKeyword('itemTypeReference', {
+            validate: (schema, data, parentSchema, dataPath, parentData, propertyName, rootData)=>{
+                var matches = /.*\#\/definitions\/(.*)/g.exec(schema);
+                if (matches) {
+                    var result = this.index.type[data] == matches[1];
+                    return result;
+                }
+                console.log('Unknown #ref definition: ' + schema);
+            }
+        });
+        const schemaBaseURL = 'https://opendata.slo.nl/curriculum/schemas/';
+        Object.keys(this.schemas).forEach((schemaName)=>{
+            ajv.addSchema(this.schemas[schemaName], schemaBaseURL + schemaName + '/context.json');
+        });
+        var errors = {
+        };
+        var valid = true;
+        Object.keys(this.schemas).forEach((schemaName)=>{
+            if (!ajv.validate(schemaBaseURL + schemaName + '/context.json', this.data)) {
+                errors[schemaName] = ajv.errors;
+                valid = false;
+            }
+        });
+        if (!valid) return errors;
+        else return true;
     }
     add(schemaName, section, object) {
         if (!object.id) object.id = this.uuid();
@@ -322,19 +356,6 @@ class $57ffaf843300749d$export$2e2bcd8739ae039 {
                 });
             });
             return data1;
-        });
-    }
-    updateReferences(object) {
-        Object.keys(object).forEach((k)=>{
-            if (Array.isArray(object[k]) && k.substr(k.length - 3) == '_id') object[k].forEach((id)=>{
-                if (!this.index.references[id]) this.index.references[id] = [];
-                this.index.references[id].push(object.id);
-            });
-            else if (k.substr(k.length - 3) == '_id' && typeof object[k] == 'string') {
-                var id = object[k];
-                if (!this.index.references[id]) this.index.references[id] = [];
-                this.index.references[id].push(object.id);
-            }
         });
     }
     async loadContextFromFile(schemaName, fileName) {
