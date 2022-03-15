@@ -5,12 +5,26 @@ import _ from 'lodash'
 import { Octokit } from "@octokit/rest"
 import Ajv from 'ajv'
 import fetch from 'cross-fetch'
-import fs from 'fs'
+import { promises as fs } from 'fs'
 
 if (!atob) {
     var atob = (base64) => {
         return Buffer.from(base64, 'base64').toString('binary');
     };
+}
+
+function dirname(path)
+{
+    if (path[path.length-1] == '/') {
+        path = path.substring(0, path.length-1)
+    }
+    let slash = path.lastIndexOf('/')
+    if (slash) {
+        path = path.substring(0, slash)
+    } else {
+        path = '/'
+    }
+    return path
 }
 
 export default class Curriculum {
@@ -388,10 +402,10 @@ export default class Curriculum {
 
         properties.forEach(propertyName => {
             if (typeof(schema.properties[propertyName]['#file']) != 'undefined') {
-                data[propertyName] = (() => {
+                data[propertyName] = (async () => {
                     switch(this.sources[schemaName].method) {
                         case 'url':
-                            var baseURL = dirname(this.sources[schemaName].source)
+                            var baseURL = dirname(this.sources[schemaName].source)+'/'
                             return fetch(baseURL + schema.properties[propertyName]['#file'])
                             .then(response => {
                                 if (response.ok) {
@@ -401,28 +415,22 @@ export default class Curriculum {
                             });
                         break;
                         case 'file':
-                            var baseDir = dirname(this.sources[schemaName].source)
+                            var baseDir = dirname(this.sources[schemaName].source)+'/'
                             if (!this.envIsNode()) {
-                                return new Promise((resolve, reject) => {
-                                    reject({
-                                        message: 'Filesystem support is limited to node-js'
-                                    })
-                                })
+                                throw new Error('Filesystem support is limited to node-js')
                             }
-                            return new Promise((resolve,reject) => {
-                                fs.readFile(
-                                    baseDir + schema.properties[propertyName]['#file'], 
-                                    'utf8', 
-                                    (err, data) => {
-                                        if (err) {
-                                            reject(err)
-                                        } else {
-                                            resolve(data)
-                                        }
+                            let json = await fs.readFile(
+                                baseDir + schema.properties[propertyName]['#file'], 
+                                'utf8', 
+                                (err, data) => {
+                                    if (err) {
+                                        reject(err)
+                                    } else {
+                                        resolve(data)
                                     }
-                                )
-                            })
-                            .then(data => JSON.parse(data))
+                                }
+                            )
+                            return JSON.parse(json)
                         break;
                         case 'github':
                             return this.sources[schemaName]
@@ -492,8 +500,9 @@ export default class Curriculum {
             state: 'loading'
         }
         const context = await fs.readFile(fileName, 'utf8')
+        let schema = {}
         try {
-            const schema  = JSON.parse(context)
+            schema  = JSON.parse(context)
         } catch(error) {
             throw new SyntaxError('JSON Parse error in '+schemaName, { cause: error })
         }
