@@ -3,7 +3,7 @@
   "type": "module",
   "version": "0.0.1",
   "description": "library to work with slonl/curriculum datasets",
-  "main": "dist/curriculum.js",
+  "main": "dist/node/curriculum.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -11,7 +11,7 @@
     "type": "git",
     "url": "git+https://github.com/slonl/curriculum-js.git"
   },
-  "author": "",
+  "author": "auke@muze.nl",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/slonl/curriculum-js/issues"
@@ -32,6 +32,7 @@
   "dependencies": {
     "@apidevtools/json-schema-ref-parser": "^9.0.9",
     "@octokit/rest": "^18.12.0",
+    "ajv": "^6.12.6",
     "json-schema-ref-parser": "^9.0.9",
     "jsondiffpatch": "^0.4.1",
     "lodash": "^4.17.21",
