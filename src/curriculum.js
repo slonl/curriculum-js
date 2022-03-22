@@ -5,7 +5,7 @@ import _ from 'lodash'
 import { Octokit } from "@octokit/rest"
 import Ajv from 'ajv'
 import fetch from 'cross-fetch'
-import { promises as fs } from 'fs'
+import fs from 'fs'
 
 if (!atob) {
     var atob = (base64) => {
@@ -22,7 +22,10 @@ function dirname(path)
     if (slash) {
         path = path.substring(0, slash)
     } else {
-        path = '/'
+        path = ''
+    }
+    if (!path) {
+        path = '.'
     }
     return path
 }
@@ -419,7 +422,7 @@ export default class Curriculum {
                             if (!this.envIsNode()) {
                                 throw new Error('Filesystem support is limited to node-js')
                             }
-                            let json = await fs.readFile(
+                            let json = fs.readFileSync(
                                 baseDir + schema.properties[propertyName]['#file'], 
                                 'utf8', 
                                 (err, data) => {
@@ -434,8 +437,8 @@ export default class Curriculum {
                         break;
                         case 'github':
                             return this.sources[schemaName]
-                            	.getFile(schema.properties[propertyName]['#file'])
-                            	.then(data => JSON.parse(data))
+                                .getFile(schema.properties[propertyName]['#file'])
+                                .then(data => JSON.parse(data))
                         break;
                         default:
                             throw new Error('Unknown loading method '+this.sources[schemaName].method);
@@ -494,12 +497,15 @@ export default class Curriculum {
 
     async loadContextFromFile(schemaName, fileName)
     {
+        if (!this.envIsNode()) {
+            throw new Error('Filesystem support is limited to node-js')
+        }
         this.sources[schemaName] = {
             method: 'file',
             source: fileName,
             state: 'loading'
         }
-        const context = await fs.readFile(fileName, 'utf8')
+        const context = fs.readFileSync(fileName, 'utf8')
         let schema = {}
         try {
             schema  = JSON.parse(context)
@@ -549,7 +555,7 @@ export default class Curriculum {
         };
         let options = {}
         if (authToken) {
-        	options.auth = authToken
+            options.auth = authToken
         }
         const octokit = new Octokit(options)
         var getFile = function(filename, list) {
@@ -581,11 +587,11 @@ export default class Curriculum {
 
         const context = await this.sources[schemaName].getFile('context.json')
         var schema = '';
-       	try {
-       		schema = JSON.parse(context);
-       	} catch(e) {
-       		console.error('Incorrect json: ', context)
-       		throw new SyntaxError('Incorrect JSON in '+schemaName+' context.json')
+        try {
+            schema = JSON.parse(context);
+        } catch(e) {
+            console.error('Incorrect json: ', context)
+            throw new SyntaxError('Incorrect JSON in '+schemaName+' context.json')
         }
 
         this.schemas[schemaName] = schema
@@ -598,9 +604,12 @@ export default class Curriculum {
 
     exportFiles(schema, schemaName, dir='')
     {
+        if (!this.envIsNode()) {
+            throw new Error('Filesystem support is limited to node-js')
+        }
         const properties = Object.keys(schema.properties);
-        
-        properties.forEach(function(propertyName) {
+
+        properties.forEach(propertyName => {
             //FIXME: check this.sources.type
             if (typeof schema.properties[propertyName]['#file'] != 'undefined') {
                 var file = schema.properties[propertyName]['#file']
@@ -667,4 +676,4 @@ export default class Curriculum {
         })
     }
 
-}    
+}
