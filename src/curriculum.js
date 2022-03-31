@@ -127,11 +127,10 @@ export default class Curriculum {
     validate()
     {
         const ajv = new Ajv({
-            'extendRefs': true,
-            'allErrors': true,
-            'jsonPointers': true
+            'allErrors': true
         })
-        ajv.addKeyword('itemTypeReference', {
+        ajv.addKeyword({
+            keyword: 'itemTypeReference',
             validate: (schema, data, parentSchema, dataPath, parentData, propertyName, rootData) => {
                 var matches = /.*\#\/definitions\/(.*)/g.exec(schema);
                 if (matches) {
