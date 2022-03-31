@@ -1,7 +1,7 @@
 {
   "name": "curriculum-js",
   "type": "module",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "description": "library to work with slonl/curriculum datasets",
   "main": "src/curriculum.js",
   "scripts": {
@@ -37,6 +37,7 @@
     "@apidevtools/json-schema-ref-parser": "^9.0.9",
     "@octokit/rest": "^18.12.0",
     "ajv": "^8.11.0",
+    "ajv-formats": "^2.1.1",
     "ajv-keywords": "^5.1.0",
     "cross-fetch": "^3.1.5",
     "json-schema-ref-parser": "^9.0.9",

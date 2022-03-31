@@ -4,6 +4,7 @@ import $RefParser from "json-schema-ref-parser"
 import _ from 'lodash'
 import { Octokit } from "@octokit/rest"
 import Ajv from 'ajv'
+import addFormats from 'ajv-formats'
 import fetch from 'cross-fetch'
 import fs from 'fs'
 
@@ -127,8 +128,10 @@ export default class Curriculum {
     validate()
     {
         const ajv = new Ajv({
-            'allErrors': true
+            'allErrors': true,
+            'strict': false // otherwise keyword '#file' is not allowed
         })
+        addFormats(ajv) // add format: "uuid" support, among others
         ajv.addKeyword({
             keyword: 'itemTypeReference',
             validate: (schema, data, parentSchema, dataPath, parentData, propertyName, rootData) => {
