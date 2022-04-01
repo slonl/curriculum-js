@@ -31,8 +31,8 @@ function dirname(path)
     return path
 }
 
-export default class Curriculum {
-
+export default class Curriculum
+{
     constructor()
     {
         /**
@@ -125,12 +125,21 @@ export default class Curriculum {
         })
     }
 
-    validate()
+    validate(schema)
     {
         const ajv = new Ajv({
+            'loadSchema': loadSchema,
             'allErrors': true,
             'strict': false // otherwise keyword '#file' is not allowed
         })
+        async function loadSchema(uri) {
+            const res = await fetch(uri)
+            if (res.statusCode >= 400) {
+                throw new Error('Error loading schema '+uri+': '+res.statusCode)
+            }
+            return res.body
+        }
+
         addFormats(ajv) // add format: "uuid" support, among others
         ajv.addKeyword({
             keyword: 'itemTypeReference',
@@ -143,22 +152,39 @@ export default class Curriculum {
                 console.log('Unknown #ref definition: '+schema);
             }
         });
-        const schemaBaseURL  = 'https://opendata.slo.nl/curriculum/schemas/';
-        Object.keys(this.schemas).forEach(schemaName => {
-            ajv.addSchema(this.schemas[schemaName], schemaBaseURL+schemaName+'/context.json')
-        })
-        var errors = {}
-        var valid = true
-        Object.keys(this.schemas).forEach(schemaName => {
-            if (!ajv.validate(schemaBaseURL+schemaName+'/context.json', this.data)) {
-                errors[schemaName] = ajv.errors
-                valid = false
-            }
-        })
-        if (!valid) {
-            return errors
+        if (!schema) {
+            // validate all schemas and data, fetching missing schemas from URL
+            const schemaBaseURL  = 'https://opendata.slo.nl/curriculum/schemas/';
+            Object.keys(this.schemas).forEach(schemaName => {
+                ajv.addSchema(this.schemas[schemaName], schemaBaseURL+schemaName+'/context.json')
+            })
+            var errors = {}
+            return Promise.allSettled(Object.keys(this.schemas).map(schemaName => {
+                return ajv.compileAsync(schemaBaseURL+schemaName+'/context.json')
+                .then((validate) => {
+                    let valid = validate(this.data)
+                    if (!valid) {
+                        errors[schemaName] = vallidate.errors
+                    }
+                    return valid
+                })
+            }))
+            .then(results => {
+                if (results.indexOff(false)) {
+                    throw new ValidationError('Invalid data found', errors)
+                }
+                return true
+            })
         } else {
-            return true
+            return ajv.compileAsync(schema)
+            .then((validate) => {
+                let valid = validate(this.data)
+                if (!valid) {
+                    errors = validate.errors
+                    throw new ValidationError('Invalid data found', errors)
+                }
+                return valid
+            })
         }
     }
 
@@ -359,42 +385,39 @@ export default class Curriculum {
         return section+'_id'
     }
 
-    parseSchema(schema)
+    async parseSchema(schema)
     {
-        var resolveAllOf = (function() {
-            // from https://github.com/mokkabonna/json-schema-merge-allof
-            var customizer = function (objValue, srcValue) {
-                if (_.isArray(objValue)) {
-                    return _.union(objValue, srcValue);
-                }
-                return;
-            };
-            return function(inputSpec) {
-                if (inputSpec && typeof inputSpec === 'object') {
-                    if (Object.keys(inputSpec).length > 0) {
-                        if (inputSpec.allOf) {
-                            var allOf = inputSpec.allOf;
-                            delete inputSpec.allOf;
-                            var nested = _.mergeWith.apply(_, [{}].concat(allOf, [customizer]));
-                            inputSpec = _.defaultsDeep(inputSpec, nested, customizer);
-                        }
-                        Object.keys(inputSpec).forEach(function (key) {
-                            inputSpec[key] = resolveAllOf(inputSpec[key]);
-                        });
-                    }
-                }
-                return inputSpec;
-            }
-        })();
+        // from https://github.com/mokkabonna/json-schema-merge-allof
 
-        return $RefParser.dereference(schema)
-        .then(function(schema) {
-            return resolveAllOf(schema);
-        });
+        const customizer = (objValue, srcValue) => {
+            if (Array.isArray(objValue)) {
+                return _.union(objValue, srcValue)
+            }
+            return
+        }
+
+        const resolveAllOf = (inputSpec) => {
+            if (inputSpec && typeof inputSpec === 'object') {
+                if (Object.keys(inputSpec).length > 0) {
+                    if (inputSpec.allOf) {
+                        const allOf  = inputSpec.allOf
+                        delete inputSpec.allOf
+                        const nested = _.mergeWith.apply(_, [{}].concat(allOf, [customizer]))
+                        inputSpec    = _.defaultsDeep(inputSpec, nested, customizer)
+                    }
+                    Object.keys(inputSpec).forEach((key) => {
+                        inputSpec[key] = resolveAllOf(inputSpec[key])
+                    })
+                }
+            }
+            return inputSpec
+        }
+
+        return resolveAllOf(await $RefParser.dereference(schema))
     }
 
-
-    async loadData(schemaName) {
+    async loadData(schemaName)
+    {
 
         const schema = this.schemas[schemaName];
         let data     = {};
@@ -645,37 +668,13 @@ export default class Curriculum {
         return dirty
     }
 
-    parseSchema(schema) {
-        var resolveAllOf = (() => {
-            // from https://github.com/mokkabonna/json-schema-merge-allof
-            var customizer = function (objValue, srcValue) {
-                if (Array.isArray(objValue)) {
-                    return _.union(objValue, srcValue);
-                }
-                return;
-            };
-            return (inputSpec) => {
-                if (inputSpec && typeof inputSpec === 'object') {
-                    if (Object.keys(inputSpec).length > 0) {
-                        if (inputSpec.allOf) {
-                            var allOf  = inputSpec.allOf
-                            delete inputSpec.allOf
-                            var nested = _.mergeWith.apply(_, [{}].concat(allOf, [customizer]))
-                            inputSpec  = _.defaultsDeep(inputSpec, nested, customizer)
-                        }
-                        Object.keys(inputSpec).forEach(function (key) {
-                            inputSpec[key] = resolveAllOf(inputSpec[key])
-                        })
-                    }
-                }
-                return inputSpec
-            }
-        })()
+}
 
-        return $RefParser.dereference(schema)
-        .then(function(schema) {
-            return resolveAllOf(schema)
-        })
+class ValidationError extends Error
+{
+    constructor(message, errors)
+    {
+        super(message)
+        this.validationErrors = errors
     }
-
 }
