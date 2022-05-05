@@ -1,7 +1,7 @@
 {
   "name": "curriculum-js",
   "type": "module",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "library to work with slonl/curriculum datasets",
   "main": "src/curriculum.js",
   "scripts": {

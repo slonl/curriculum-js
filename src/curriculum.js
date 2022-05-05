@@ -137,7 +137,7 @@ export default class Curriculum
             if (res.statusCode >= 400) {
                 throw new Error('Error loading schema '+uri+': '+res.statusCode)
             }
-            return res.body
+            return res.json()
         }
 
         addFormats(ajv) // add format: "uuid" support, among others
@@ -478,46 +478,62 @@ export default class Curriculum
 
         return Promise.allSettled(Object.values(data))
         .then(results => {
-            Object.keys(data).forEach(propertyName => {
-                data[propertyName].then(entities => {
-                    console.log('index size '+Object.keys(this.index.id).length);
-                    console.log('indexing '+schemaName+'.'+propertyName+' ('+entities.length+')');
-                    if (!this.data[propertyName]) {
-                        this.data[propertyName] = [];
-                    }
-                    Array.prototype.push.apply(this.data[propertyName],entities);
-
-                    if (!this.schema[schemaName]) {
-                        this.schema[schemaName] = {};
-                    }
-                    if (!this.schema[schemaName][propertyName]) {
-                        this.schema[schemaName][propertyName] = [];
-                    }
-                    Array.prototype.push.apply(this.schema[schemaName][propertyName],entities);
-
-                    var count = 0;
-                    entities.forEach(entity => {
-                        if (entity.id) {
-                            if (this.index.id[entity.id]) {
-                                this.errors.push('Duplicate id in '+schemaName+'.'+propertyName+': '+entity.id)
-                            } else {
-                                this.index.id[entity.id]     = entity
-                                this.index.type[entity.id]   = propertyName
-                                this.index.schema[entity.id] = schemaName
-                                this.updateReferences(entity)
-                                if (/deprecated/.exec(propertyName)!==null) {
-                                    this.index.deprecated[entity.id] = entity;
-                                }
-                            }
-                        } else {
-                            this.errors.push('Missing id in '+schemaName+'.'+propertyName+': '+count)
-                        }
-                        count++
-                    })
-                })
-            })
+            this.indexData(data)
             return data
         })
+    }
+
+    indexData(data) 
+    {
+        Object.keys(data).forEach(propertyName => {
+            data[propertyName].then(entities => {
+                console.log('index size '+Object.keys(this.index.id).length);
+                console.log('indexing '+schemaName+'.'+propertyName+' ('+entities.length+')');
+                if (!this.data[propertyName]) {
+                    this.data[propertyName] = [];
+                }
+                Array.prototype.push.apply(this.data[propertyName],entities);
+
+                if (!this.schema[schemaName]) {
+                    this.schema[schemaName] = {};
+                }
+                if (!this.schema[schemaName][propertyName]) {
+                    this.schema[schemaName][propertyName] = [];
+                }
+                Array.prototype.push.apply(this.schema[schemaName][propertyName],entities);
+
+                var count = 0;
+                entities.forEach(entity => {
+                    if (entity.id) {
+                        if (this.index.id[entity.id]) {
+                            this.errors.push('Duplicate id in '+schemaName+'.'+propertyName+': '+entity.id)
+                        } else {
+                            this.index.id[entity.id]     = entity
+                            this.index.type[entity.id]   = propertyName
+                            this.index.schema[entity.id] = schemaName
+                            this.updateReferences(entity)
+                            if (/deprecated/.exec(propertyName)!==null) {
+                                this.index.deprecated[entity.id] = entity;
+                            }
+                        }
+                    } else {
+                        this.errors.push('Missing id in '+schemaName+'.'+propertyName+': '+count)
+                    }
+                    count++
+                })
+            })
+        })
+    }
+
+    loadContext(schema, data)
+    {
+        let schemaName = schema['$id'] // check that it exists
+        this.sources[schemaName] = {
+            method: 'direct'
+        }
+        this.schemas[schemaName] = schema
+        this.schema[schemaName]  = data
+        this.indexData(data)
     }
 
     async loadContextFromFile(schemaName, fileName)
