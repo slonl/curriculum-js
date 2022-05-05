@@ -476,9 +476,20 @@ export default class Curriculum
             }
         })
 
+        let keys = Object.keys(data)
         return Promise.allSettled(Object.values(data))
         .then(results => {
-            this.indexData(data)
+            let values = {}
+            Object.keys(results).forEach(key => {
+                let name = keys[key]
+                if (typeof results[key].value !== 'undefined') {
+                    values[name] = results[key].value
+                }
+            })
+            return values;
+        })
+        .then(data => {
+            this.indexData(data, schemaName)
             return data
         })
     }
@@ -486,41 +497,40 @@ export default class Curriculum
     indexData(data, schemaName) 
     {
         Object.keys(data).forEach(propertyName => {
-            data[propertyName].then(entities => {
-                console.log('index size '+Object.keys(this.index.id).length);
-                console.log('indexing '+schemaName+'.'+propertyName+' ('+entities.length+')');
-                if (!this.data[propertyName]) {
-                    this.data[propertyName] = [];
-                }
-                Array.prototype.push.apply(this.data[propertyName],entities);
+            let entities = data[propertyName]
+            console.log('index size '+Object.keys(this.index.id).length);
+            console.log('indexing '+schemaName+'.'+propertyName+' ('+entities.length+')');
+            if (!this.data[propertyName]) {
+                this.data[propertyName] = [];
+            }
+            Array.prototype.push.apply(this.data[propertyName],entities);
 
-                if (!this.schema[schemaName]) {
-                    this.schema[schemaName] = {};
-                }
-                if (!this.schema[schemaName][propertyName]) {
-                    this.schema[schemaName][propertyName] = [];
-                }
-                Array.prototype.push.apply(this.schema[schemaName][propertyName],entities);
+            if (!this.schema[schemaName]) {
+                this.schema[schemaName] = {};
+            }
+            if (!this.schema[schemaName][propertyName]) {
+                this.schema[schemaName][propertyName] = [];
+            }
+            Array.prototype.push.apply(this.schema[schemaName][propertyName],entities);
 
-                var count = 0;
-                entities.forEach(entity => {
-                    if (entity.id) {
-                        if (this.index.id[entity.id]) {
-                            this.errors.push('Duplicate id in '+schemaName+'.'+propertyName+': '+entity.id)
-                        } else {
-                            this.index.id[entity.id]     = entity
-                            this.index.type[entity.id]   = propertyName
-                            this.index.schema[entity.id] = schemaName
-                            this.updateReferences(entity)
-                            if (/deprecated/.exec(propertyName)!==null) {
-                                this.index.deprecated[entity.id] = entity;
-                            }
-                        }
+            var count = 0;
+            entities.forEach(entity => {
+                if (entity.id) {
+                    if (this.index.id[entity.id]) {
+                        this.errors.push('Duplicate id in '+schemaName+'.'+propertyName+': '+entity.id)
                     } else {
-                        this.errors.push('Missing id in '+schemaName+'.'+propertyName+': '+count)
+                        this.index.id[entity.id]     = entity
+                        this.index.type[entity.id]   = propertyName
+                        this.index.schema[entity.id] = schemaName
+                        this.updateReferences(entity)
+                        if (/deprecated/.exec(propertyName)!==null) {
+                            this.index.deprecated[entity.id] = entity;
+                        }
                     }
-                    count++
-                })
+                } else {
+                    this.errors.push('Missing id in '+schemaName+'.'+propertyName+': '+count)
+                }
+                count++
             })
         })
     }
