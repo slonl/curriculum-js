@@ -483,7 +483,7 @@ export default class Curriculum
         })
     }
 
-    indexData(data) 
+    indexData(data, schemaName) 
     {
         Object.keys(data).forEach(propertyName => {
             data[propertyName].then(entities => {
@@ -533,7 +533,7 @@ export default class Curriculum
         }
         this.schemas[schemaName] = schema
         this.schema[schemaName]  = data
-        this.indexData(data)
+        this.indexData(data, schemaName)
     }
 
     async loadContextFromFile(schemaName, fileName)
