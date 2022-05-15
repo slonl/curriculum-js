@@ -101,6 +101,9 @@ export default class Curriculum
 
     updateReferences(object)
     {
+        if (this.index.type[object]==='deprecated') {
+            return;
+        }
         Object.keys(object).forEach(k => {
             if (
                 Array.isArray(object[k]) 
@@ -170,7 +173,7 @@ export default class Curriculum
                 })
             }))
             .then(results => {
-                if (results.indexOff(false)) {
+                if (results.indexOf(false)) {
                     throw new ValidationError('Invalid data found', errors)
                 }
                 return true
@@ -323,6 +326,21 @@ export default class Curriculum
                 this.index.type[oldObject.id] = 'deprecated'
             }
         }
+        // remove all references in index.references from oldObject.id
+        var props = Object.keys(oldObject);
+        props.forEach(prop => {
+            if (prop.substring(prop.length-3)==='_id') {
+                let list = oldObject[prop]
+                if (!Array.isArray(list)) {
+                    list = [list]
+                }
+                list.forEach(refId => {
+                    this.index.references[refId] = this.index.references[refId].filter(
+                        objectId => objectId!=oldObject.id 
+                    )
+                })
+            }
+        })
 
         // update all references to oldObject.id to newId
         var refs = this.index.references[oldObject.id]; // does not and must not include replaces/replacedBy references
@@ -687,6 +705,7 @@ export default class Curriculum
             if (
                 this.index.id[id].dirty 
                 && !this.index.id[id].unreleased
+                && this.index.type[id]!=='deprecated'
             ) {
                 dirty.push(this.index.id[id])
             }
