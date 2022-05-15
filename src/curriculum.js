@@ -335,9 +335,11 @@ export default class Curriculum
                     list = [list]
                 }
                 list.forEach(refId => {
-                    this.index.references[refId] = this.index.references[refId].filter(
-                        objectId => objectId!=oldObject.id 
-                    )
+                    if (this.index.references[refId]) {
+                        this.index.references[refId] = this.index.references[refId].filter(
+                            objectId => objectId!=oldObject.id 
+                        )
+                    }
                 })
             }
         })
