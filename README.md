@@ -97,6 +97,8 @@ So when a `ldkKern` needs to change, for example, we just create a new `ldkKern`
 
 In effect we now have two trees, the old one, with the old `ldkVakleergebied` as its root, and the new one, with the new `ldkVakleergebied` as its root.
 
+![An immutable tree](/immutable-tree.png)
+
 Since we also add `replacedBy` and `replaces` properties in the old and new entities, respectively, this allows us to time-travel through the dataset.
 
 In practice we've found that this will generate too many new entities, if this is done for any change. So we've optimized it a bit. Instead of doing this for any change, we only do this when we release a new dataset. Before that we simply mark each changed entity as `dirty`, but only if the entity has been released. Any new entity starts its life with an `unreleased: true` property. This is removed in the release procedure.
