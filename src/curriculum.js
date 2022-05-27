@@ -203,7 +203,7 @@ export default class Curriculum
             })
             var errors = {}
             return Promise.allSettled(Object.keys(this.schemas).map(schemaName => {
-                return ajv.compileAsync(schemaBaseURL+schemaName+'/context.json')
+                return ajv.compileAsync(this.schemas[schemaName])
                 .then((validate) => {
                     let valid = validate(this.data)
                     if (!valid) {
@@ -213,7 +213,10 @@ export default class Curriculum
                 })
             }))
             .then(results => {
-                if (results.indexOf(false)) {
+                if (results.indexOf(false)!==-1) {
+                    if (!errors || !errors.length) {
+                        errors = results;
+                    }
                     throw new ValidationError('Invalid data found', errors)
                 }
                 return true
@@ -243,6 +246,7 @@ export default class Curriculum
         if (!object.id) {
             object.id = this.uuid()
         }
+        // FIXME: if object.id was set already, check that it isn't in use, if so throw an error
         if (section == 'deprecated') {
             throw new Error('You cannot add to deprecated, use the deprecate function instead')
         }
