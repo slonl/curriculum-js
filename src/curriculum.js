@@ -14,6 +14,12 @@ if (!atob) {
     };
 }
 
+/**
+ * Return the parent directory of a given path, without the last '/'
+ * If there is no parent directory, return '.'
+ * @param (string) path
+ * @returns string
+ */
 function dirname(path)
 {
     if (path[path.length-1] == '/') {
@@ -31,6 +37,17 @@ function dirname(path)
     return path
 }
 
+/**
+ * The Curriculum class exposes a number of utility methods to manipulate the curriculum datasets
+ * from github.com/slonl/curriculum-* repositories.
+ *
+ * Usage:
+ *     let myCurriculum = new Curriculum()
+ *     myCurriculum.loadContextFromGithub('curriculum-basis', 'curriculum-basis', 'slonl', 'master', authToken)
+ *     .then(() => {
+ *         // context is loaded in curriculum.data
+ *     })
+ */
 export default class Curriculum
 {
     constructor()
@@ -88,17 +105,31 @@ export default class Curriculum
         this.schema  = {}
     }
 
+    /**
+     * Check if we are running inside Node
+     * @returns boolean 
+     */
     envIsNode()
     {
         var isNode = new Function("try { return this===global; } catch(e) { return false; }")
         return isNode();        
     }
 
+    /**
+     * Creates a new UUID v4 (random)
+     * @returns string
+     */
     uuid()
     {
         return v4()
     }
 
+    /**
+     * This updates the references index for a given object. Call this after you've added or removed 
+     * entries in a object.{something}_id array.
+     * @param object an entity from an slonl curriculum-context
+     * @returns void
+     */
     updateReferences(object)
     {
         if (this.index.type[object]==='deprecated') {
@@ -128,6 +159,15 @@ export default class Curriculum
         })
     }
 
+    /**
+     * This validates a loaded curriculum context against a JSON-Schema schema, 
+     * or if no schema is given, it will validate all loaded curriculum contexts against their own context.json schema.
+     * It will return a Promise(true) or throw a ValidationError.
+     * If you validate all schema's, it will return the list of errors grouped by schema.
+     * @param (optional) object Schema the JSON-Schema schema to validate
+     * @return Promise (boolean) true if valid
+     * @throws ValidationError if any errors are found
+     */
     validate(schema)
     {
         const ajv = new Ajv({
@@ -191,6 +231,13 @@ export default class Curriculum
         }
     }
 
+    /**
+     * Adds a new entity to a given curriculum context (by schemaName) and section (root property of the context)
+     * *note*: you cannot add an object to the deprecated section, use the deprecate() method instead
+     * @param (string) schemaName: the name of the schema, as used in the LoadContextFrom* methods
+     * @param (string) section: the name of the root property in the schema to add the object to
+     * @param (object) object: the new object to add
+     */
     add(schemaName, section, object) 
     {
         if (!object.id) {
@@ -209,6 +256,15 @@ export default class Curriculum
         return object.id
     }
 
+    /**
+     * Deprecates an existing entity. It removes this object from its current list (root property).
+     * It moves it to the deprecated list (context.deprecated property)
+     * It replaces all links to it with the replacedBy parameter.
+     * If no replacedBy is given, all links to it are deleted.
+     * @param (object) entity: the curriculum entity to deprecate
+     * @param (int) replacedBy: the id of the curriculum entity that replaces the deprecated object
+     * @returns void
+     */
     deprecate(entity, replacedBy)
     {
         var currentSection = this.index.type[entity.id]
@@ -219,51 +275,16 @@ export default class Curriculum
         this.replace(entity.id, replacedBy)
     }
 
-    update(section, id, diff)
-    {
-        if (section == 'deprecated') {
-            throw new Error('You cannot update deprecated entities')
-        }
-        var entity = this.index.id[id]
-        var clone  = this.clone(entity)
-        jsondiffpatch.patch(clone, diff)
-        // check if entity must be deprecated
-        // if so check that clone.id is not entity.id
-        // if so create a new id for clone
-        if (
-            typeof entity.unreleased == 'undefined' 
-            || !entity.unreleased
-        ) {
-            if (section=='deprecated') {
-                // updating a deprecated entity, so only the replacedBy may be updated
-                if (
-                    Object.keys(diff).length>1 
-                    || typeof diff.replacedBy == 'undefined'
-                ) {
-                    throw new Error('illegal deprecated entity update '+id+': '+JSON.stringify(diff))
-                }
-            }
-            if (clone.id == entity.id) {
-                clone.id = this.uuid()
-            }
-            this.add(section, clone)
-            this.replace(entity.id, clone.id)
-        } else {
-            // no need to deprecate entity, just update its contents
-            if (clone.id!=entity.id) {
-                throw new Error('update cannot change entity id')
-            }
-            entity = jsondiffpatch.patch(entity, diff)
-        }
-        this.updateReferences(entity)
-        return entity.id
-    }
 
     /**
-     * Replace an entity with a new entity
-     * Find all links to the old entity and replace the links
-     * add replacedBy in old entity
-     * add replaces in new entity
+     * Replaces an entity id with a new entity id, deprecates the old id.
+     * Finds all links to the old entity and replace the links
+     * then adds replacedBy=>newId in the old entity and adds replaces=>id in the new entity
+     * This method also updates relevant indexes.
+     * *note* entities that are already deprecated cannot be replaced
+     * @param (int) id: the id of the entity to replace
+     * @param (int) newId: the id of the entity that replaces it
+     * @throws Error when trying to replace a deprecated entity or an unknown entity
      */
     replace(id, newId) 
     {
@@ -381,6 +402,9 @@ export default class Curriculum
         }
     }
 
+    /**
+     * This method is probably no longer needed, FIXME: check this
+     */
     getParentSections(section) 
     {
         var parentSections = []
@@ -400,11 +424,18 @@ export default class Curriculum
         return parentSections;
     }
 
+    /**
+     * This method is probably no longer needed, FIXME: check this
+     */
     getParentProperty(section) 
     {
         return section+'_id'
     }
 
+    /**
+     * This parses a JSON-Schema schema and fills in all $ref references
+     * @retuns (object) the filled in schema
+     */
     async parseSchema(schema)
     {
         // from https://github.com/mokkabonna/json-schema-merge-allof
@@ -436,6 +467,15 @@ export default class Curriculum
         return resolveAllOf(await $RefParser.dereference(schema))
     }
 
+    /**
+     * This method loads the data from a schema by schemaName. The schema must
+     * have been loaded first, and it must include the curriculum-specific #file properties
+     * The schema can be loaded from file, url or github.
+     * @param (string) schemaName: the name of the loaded schema, as passed to loadContextFrom* methods
+     * @returns Promise
+     * @throws NetworkError in case of a url-loaded schema encounters a network error loading the data
+     * @throws Error in case of an unknown load method (not url, file or github)
+     */
     async loadData(schemaName)
     {
 
@@ -514,6 +554,12 @@ export default class Curriculum
         })
     }
 
+    /**
+     * Indexes all data from a given schemaName. This is called automatically by loadData()
+     * @param (object) data: the loaded data for the schema
+     * @param (string) schemaName: the name of the schema
+     * @returns void
+     */
     indexData(data, schemaName) 
     {
         Object.keys(data).forEach(propertyName => {
@@ -555,6 +601,12 @@ export default class Curriculum
         })
     }
 
+    /**
+     * Register the data for a given schema. Use this when the data is already loaded.
+     * @param (object) schema: the JSON-Schema of the context
+     * @param (object) data: the data for the context
+     * @returns void
+     */
     loadContext(schema, data)
     {
         let schemaName = schema['$id'] // check that it exists
@@ -566,6 +618,12 @@ export default class Curriculum
         this.indexData(data, schemaName)
     }
 
+    /**
+     * Loads a curriculum context from file.
+     * @param (string) schemaName: the name of the schema
+     * @param (string) fileName: the filename of the JSON-Schema file
+     * @returns Promise( (object) schema)
+     */
     async loadContextFromFile(schemaName, fileName)
     {
         if (!this.envIsNode()) {
@@ -591,6 +649,12 @@ export default class Curriculum
         return schema
     }
 
+    /**
+     * Loads a curriculum context from a URL.
+     * @param (string) schemaName: the name of the schema
+     * @param (string) url: the url of the JSON-Schema file
+     * @returns Promise( (object) schema)
+     */
     async loadContextFromURL(schemaName, url)
     {
         this.sources[schemaName] = {
@@ -612,7 +676,16 @@ export default class Curriculum
         return schema
     };
 
-    async loadContextFromGithub(schemaName, repository, owner, branchName, authToken=null)
+    /**
+     * Loads a curriculum context from github.
+     * @param (string) schemaName: the name of the schema
+     * @param (string) repository: the name of the repository, e.g. 'curriculum-basis'
+     * @param (string) owner: the owner of the repository, e.g. 'slonl'
+     * @param (optional) (string) branchName: the branch of the repository, e.g. 'master' (the default)
+     * @param (optional) (string) authToken: the personal access token from github
+     * @returns Promise( (object) schema)
+     */
+    async loadContextFromGithub(schemaName, repository, owner, branchName='master', authToken=null)
     {
 
         if (!branchName) {
@@ -672,7 +745,14 @@ export default class Curriculum
         return schema
     }
 
-
+    /**
+     * Writes the data from curriculum.data to a set of files, as defined in the schema
+     * @param (object) schema: the schema of the curriculum context to write the files for
+     * @param (string) schemaName: the name of the schema
+     * @param (string) dir: the directory to use for the schema
+     * @returns void
+     * @throws Error if this is run outside of Node, since filesystem support is limited to Node.
+     */
     exportFiles(schema, schemaName, dir='')
     {
         if (!this.envIsNode()) {
@@ -695,11 +775,20 @@ export default class Curriculum
         })
     }
 
+    /**
+     * Creates a deep copy of an object. The object must not have recursive references.
+     */
     clone(object)
     {
         return JSON.parse(JSON.stringify(object))
     }
 
+    /**
+     * Returns a list of entities that have been marked dirty. Entities are marked
+     * dirty either by hand or by the replace() method.
+     * It will filter out all unreleased entities and all deprecated entities.
+     * @returns (array) an array of dirty entities.
+     */
     getDirty()
     {
         let dirty = []
@@ -717,6 +806,11 @@ export default class Curriculum
 
 }
 
+/**
+ * Represents a validation error when running the Curriculum.validate() method.
+ * It contains an extra property validationErrors, which you can use to see 
+ * what the validation errors were, per schema.
+ */
 class ValidationError extends Error
 {
     constructor(message, errors)
