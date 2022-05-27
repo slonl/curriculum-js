@@ -1,0 +1,12 @@
+[
+    {
+        "id": "af971f55-cc8d-4ca6-97f1-c5e5f74c102f",
+        "title": "Een doel",
+        "niveau_id": ["60ef8333-9405-4023-af90-af2631275414"]
+    },
+    {
+        "id": "db6e864d-df12-4b08-b627-18fd2cd90fe9",
+        "title": "Een ander doel",
+        "niveau_id": ["40dd0d86-35e3-4bbe-b6a0-332df39da5b7"]
+    }
+]

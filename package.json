@@ -5,7 +5,7 @@
   "description": "library to work with slonl/curriculum datasets",
   "main": "src/curriculum.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "tap test/*.mjs"
   },
   "repository": {
     "type": "git",
@@ -30,6 +30,7 @@
     "process": "^0.11.10",
     "querystring-es3": "^0.2.1",
     "stream-http": "^3.2.0",
+    "tap": "^16.2.0",
     "url": "^0.11.0",
     "util": "^0.12.4"
   },

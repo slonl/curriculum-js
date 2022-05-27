@@ -1,0 +1,89 @@
+{
+	"definitions": {
+		"uuid": {
+			"type": "string",
+			"anyOf": [
+				{ "format": "uuid" },
+				{ "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$" }
+			]
+		},
+		"uuidArray": {
+			"type" : "array",
+			"items": {
+				"$ref": "#/definitions/uuid"
+			},
+			"uniqueItems": true
+		},
+		"baseid": {
+			"properties": {
+				"id": {
+					"$ref": "#/definitions/uuid"
+				},
+				"replacedBy": {
+					"$ref": "#/definitions/uuidArray"
+				},
+				"replaces" : {
+					"$ref": "#/definitions/uuidArray"
+				},
+				"unreleased" : {
+					"type" : "boolean"
+				}
+			},
+			"required": ["id"]
+		},
+		"base": {
+			"allOf": [ { "$ref": "#/definitions/baseid" } ],
+			"properties": {
+				"title": {
+					"type": "string"
+				},
+				"description": {
+				    "type": "string"
+				}
+			},
+			"required": ["id","title"]
+		},
+		"niveau": {
+			"$ref": "#/definitions/base"
+		},
+		"doel": {
+			"allOf": [ { "$ref": "#/definitions/base" } ],
+			"properties": {
+				"niveau_id": {
+					"allOf": [ 
+						{"$ref": "#/definitions/uuidArray"},
+						{
+							"items": {
+								"itemTypeReference": "#/definitions/niveau"
+							}
+						}
+					]
+				}
+			}
+		}	
+	},
+	"$id": "https://opendata.slo.nl/curriculum/schemas/curriculum-js/test/context.json",
+	"$schema": "http://json-schema.org/draft-07/schema#",
+	"type": "object",
+	"properties": {
+		"niveau": {
+			"#file": "data/niveaus.json",
+			"type" : "array",
+			"items": {
+				"$ref": "#/definitions/niveau"
+			}
+		},
+		"doel": {
+			"#file": "data/doelen.json",
+			"type" : "array",
+			"items": {
+				"$ref": "#/definitions/doel"
+			}
+		},
+		"deprecated": {
+			"#file": "data/deprecated.json",
+			"type" : "array"
+		}
+	},
+	"required": ["niveau"]
+}
