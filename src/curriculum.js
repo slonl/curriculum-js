@@ -171,7 +171,6 @@ export default class Curriculum
      */
     validate(schema=null, strict=false)
     {
-        console.log('validate strict?', strict)
         const ajv = new Ajv({
             'loadSchema': loadSchema,
             'allErrors': true,
@@ -211,7 +210,6 @@ export default class Curriculum
                 Object.keys(schema.properties).forEach(property => {
                     delete schema.properties[property]['#file']
                 })
-                console.log('schema',schema)
 
                 return ajv.compileAsync(schema)
                 .then((validate) => {
