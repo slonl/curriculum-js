@@ -1,7 +1,8 @@
 [
     {
         "id": "60ef8333-9405-4023-af90-af2631275414",
-        "title": "Niveau A"
+        "title": "Niveau A",
+        "extra field": "This should trigger the strict validation"
     },
     {
         "id": "40dd0d86-35e3-4bbe-b6a0-332df39da5b7",

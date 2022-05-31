@@ -165,15 +165,17 @@ export default class Curriculum
      * It will return a Promise(true) or throw a ValidationError.
      * If you validate all schema's, it will return the list of errors grouped by schema.
      * @param (optional) object Schema the JSON-Schema schema to validate
+     * @param (optional) boolean strict if true, do not allow extra unspecified properties, default value is false
      * @return Promise (boolean) true if valid
      * @throws ValidationError if any errors are found
      */
-    validate(schema)
+    validate(schema=null, strict=false)
     {
+        console.log('validate strict?', strict)
         const ajv = new Ajv({
             'loadSchema': loadSchema,
             'allErrors': true,
-            'strict': false // otherwise keyword '#file' is not allowed
+            'strict': strict
         })
         async function loadSchema(uri) {
             const res = await fetch(uri)
@@ -203,7 +205,15 @@ export default class Curriculum
             })
             var errors = {}
             return Promise.allSettled(Object.keys(this.schemas).map(schemaName => {
-                return ajv.compileAsync(this.schemas[schemaName])
+                // for strict testing, we must remove the '#file' entries
+                // since keywords with '#' in them are not allowed
+                let schema = this.clone(this.schemas[schemaName])
+                Object.keys(schema.properties).forEach(property => {
+                    delete schema.properties[property]['#file']
+                })
+                console.log('schema',schema)
+
+                return ajv.compileAsync(schema)
                 .then((validate) => {
                     let valid = validate(this.data)
                     if (!valid) {
@@ -222,6 +232,13 @@ export default class Curriculum
                 return true
             })
         } else {
+            // for strict testing, we must remove the '#file' entries
+            // since keywords with '#' in them are not allowed
+            let schema = this.clone(schema)
+            Object.keys(schema.properties).forEach(property => {
+                delete schema.properties[property]['#file']
+            })
+
             return ajv.compileAsync(schema)
             .then((validate) => {
                 let valid = validate(this.data)
