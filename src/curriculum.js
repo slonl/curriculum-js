@@ -232,7 +232,7 @@ export default class Curriculum
         } else {
             // for strict testing, we must remove the '#file' entries
             // since keywords with '#' in them are not allowed
-            let schema = this.clone(schema)
+            schema = this.clone(schema)
             Object.keys(schema.properties).forEach(property => {
                 delete schema.properties[property]['#file']
             })
