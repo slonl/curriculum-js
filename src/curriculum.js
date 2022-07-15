@@ -823,6 +823,57 @@ export default class Curriculum
         return dirty
     }
 
+    /**
+     * Returns the JSON Schema where parameter type is defined
+     * @param (string) type
+     */
+    getSchemaFromType(type)
+    {
+        return Object.keys(this.schemas).reduce((acc, schema) => {
+            if (typeof this.schemas[schema].properties[type] != 'undefined') {
+                return schema
+            }
+            return acc
+        }, '')
+    }
+
+    /**
+     * Walks over a curriculum graph, running one or both a topdown/bottomup function on each entity
+     * @param (object) node The root node to start with
+     * @param (object) options See the options section below
+     * @param (object) parent The parent node of this node, if available
+     *
+     * Options can be:
+     * - (function) topdownCallback a function that is called on each node, before calling it on the child nodes
+     * - (function) bottomupCallback a function that is called on each child node before calling it on the parent node
+     * - (array) terminalTypes a list of types that stop the treewalk from calling on child nodes
+     * - (array) limitSchemas a list of schemas, if a node is not part of this set of schemas, it will not be called
+     */
+    treewalk(node, options, parent=null)
+    {
+        if (typeof options === 'function') {
+            options = {
+                topdownCallback: options
+            }
+        }
+        let stop = false
+        if (typeof options.topdownCallback === 'function') {
+            stop = options.topdownCallback(node, parent)
+        }
+        if (!stop && Array.isArray(options.terminalTypes)) {
+            stop = options.terminalTypes.includes(this.index.type[node.id])
+        }
+        if (!stop && node.children && Array.isArray(node.children)) {
+            let children = node.children
+            if (Array.isArray(options.limitSchemas)) {
+                children = children.filter(id => options.limitSchemas.includes(this.index.schema[id]))
+            }
+            children.forEach(id => this.treewalk(this.index.id[id], options, node))
+        }
+        if (typeof options.bottomupCallback === 'function') {
+            options.bottomupCallback(node, parent)
+        }
+    }
 }
 
 /**

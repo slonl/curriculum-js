@@ -258,3 +258,22 @@ A utility function to deep-clone objects. This is used by curriculum.replace, am
 ## (string) curriculum.uuid()
 
 Creates a new random UUID (v4).
+
+## (string) curriculum.getSchemaFromType(type)
+
+This returns the JSON Schema in which {type} was defined.
+
+## curriculum.treewalk(node, options, parent=null)
+
+Walks over a curriculum graph, running one or both a topdown/bottomup function on each entity
+
+Parameters:
+- (object) node: The root node to start with
+- (object) options: See the options section below
+- (object) parent The parent node of this node, if available
+
+Options can be:
+- (function) topdownCallback a function that is called on each node, before calling it on the child nodes
+- (function) bottomupCallback a function that is called on each child node before calling it on the parent node
+- (array) terminalTypes a list of types that stop the treewalk from calling on child nodes
+- (array) limitSchemas a list of schemas, if a node is not part of this set of schemas, it will not be called

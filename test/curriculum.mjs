@@ -30,6 +30,21 @@ tap.test('validate', async t => {
 	t.end()
 })
 
+tap.test('validateStrict', async t => {
+	try {
+		let result = await curr.validate(null, true)
+		t.equal(result, true)
+	} catch(error) {
+		t.equal(error, false)
+		Object.keys(error.validationErrors).forEach(schema => {
+			error.validationErrors[schema].forEach(error => {
+				console.log(error.instancePath+': '+error.message)
+			})
+		})
+	}
+	t.end()
+})
+
 tap.test('add', t => {
 	let clone = curr.clone(curr.data.niveau[0])
 	clone.id = curr.uuid()
