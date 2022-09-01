@@ -103,6 +103,11 @@ export default class Curriculum
          * The schema data by schema name
          */
         this.schema  = {}
+
+        /**
+         * Allow access to Octokit
+         */
+        this.Octokit = Octokit
     }
 
     /**
