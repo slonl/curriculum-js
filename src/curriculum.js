@@ -10,12 +10,6 @@ import fs from 'fs'
 import base64 from "base-64"
 import utf8 from "utf8"
 
-if (!atob) {
-    var atob = (base64) => {
-        return Buffer.from(base64, 'base64').toString('binary');
-    };
-}
-
 /**
  * Return the parent directory of a given path, without the last '/'
  * If there is no parent directory, return '.'
