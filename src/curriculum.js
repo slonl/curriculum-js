@@ -33,6 +33,15 @@ function dirname(path)
     return path
 }
 
+
+// For decoding base64 encoded data to readable UTF-8 formatted content
+function dataDecoder(dataContent) {
+  let decoded = base64.decode(dataContent);
+  let result = utf8.decode(decoded);
+
+  return result;
+}
+
 /**
  * The Curriculum class exposes a number of utility methods to manipulate the curriculum datasets
  * from github.com/slonl/curriculum-* repositories.
@@ -696,14 +705,6 @@ export default class Curriculum
         return schema
     };
 
-    dataDecoder(dataContent)
-    {
-        let decoded = base64.decode(dataContent);
-        let result = utf8.decode(decoded);
-
-        return result;
-    }
-
     /**
      * Loads a curriculum context from github.
      * @param (string) schemaName: the name of the schema
@@ -715,7 +716,6 @@ export default class Curriculum
      */
     async loadContextFromGithub(schemaName, repository, owner, branchName='master', authToken=null)
     {
-
         if (!branchName) {
             branchName = 'master';
         }
