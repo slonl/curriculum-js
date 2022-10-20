@@ -7,6 +7,8 @@ import Ajv from 'ajv'
 import addFormats from 'ajv-formats'
 import fetch from 'cross-fetch'
 import fs from 'fs'
+import base64 from "base-64"
+import utf8 from "utf8"
 
 if (!atob) {
     var atob = (base64) => {
@@ -700,6 +702,14 @@ export default class Curriculum
         return schema
     };
 
+    dataDecoder(dataContent)
+    {
+        let decoded = base64.decode(dataContent);
+        let result = utf8.decode(decoded);
+
+        return result;
+    }
+
     /**
      * Loads a curriculum context from github.
      * @param (string) schemaName: the name of the schema
@@ -740,9 +750,9 @@ export default class Curriculum
                 
             } else {
                 return octokit.rest.git
-                    .getBlob({owner:owner, repo:repository, file_sha:hash})
-                    .then(data => data.data)
-                    .then(data => atob(data.content))
+                  .getBlob({owner:owner, repo:repository, file_sha:hash})
+                  .then(data => data.data)
+                  .then(data => dataDecoder(data.content))
             }
         };
         this.sources[schemaName].repository = repository;
