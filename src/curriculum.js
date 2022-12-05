@@ -414,7 +414,8 @@ export default class Curriculum
                                 return newId;
                             }
                             return refId;
-                        });
+                        })
+                        refOb[prop] = [ ...new Set(refOb[prop])] // filter double entries
                     } else {
                         refOb[prop] = refOb[prop].filter(refId => refId!==oldObject.id);
                     }
@@ -721,6 +722,7 @@ export default class Curriculum
         }
         this.sources[schemaName] = {
             method: 'github',
+            owner: owner,
             source: repository,
             branch: branchName,
             state: 'loading'
@@ -749,13 +751,30 @@ export default class Curriculum
                   .then(data => dataDecoder(data.content))
             }
         };
-        this.sources[schemaName].repository = repository;
+        this.sources[schemaName].files = {}
+        this.sources[schemaName].repository = repository
         this.sources[schemaName].getFile = async function(filename) {
             let branch     = await octokit.rest.repos.getBranch({owner:owner, repo:repository, branch:branchName})
             let lastCommit = branch.data.commit.sha
             let tree       = await octokit.rest.git.getTree({owner:owner, repo:repository, tree_sha:lastCommit})
+            this.sources[schemaName].files[filename] = lastCommit
             return getFile(filename, tree)
         };
+        this.sources[schemaName].writeFile = async function(filename, content, message) {
+            let currentCommit = this.sources[schemaName].files[filename]
+            await this.sources[schemaName].getFile(filename)
+            let lastCommit = this.sources[schemaName].files[filename]
+            if (lastCommit!=currentCommit) {
+                throw new Error('file is not up to date: '+filename);
+            }
+            return octokit.rest.repos.createOrUpdateFileContents({
+                owner: owner,
+                repo: repo,
+                path: filename,
+                message: message,
+                content: base64.encode(content)
+            })
+        }
 
         const context = await this.sources[schemaName].getFile('context.json')
         var schema = '';
