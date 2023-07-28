@@ -753,14 +753,14 @@ export default class Curriculum
         };
         this.sources[schemaName].files = {}
         this.sources[schemaName].repository = repository
-        this.sources[schemaName].getFile = async function(filename) {
+        this.sources[schemaName].getFile = async (filename) => {
             let branch     = await octokit.rest.repos.getBranch({owner:owner, repo:repository, branch:branchName})
             let lastCommit = branch.data.commit.sha
             let tree       = await octokit.rest.git.getTree({owner:owner, repo:repository, tree_sha:lastCommit})
             this.sources[schemaName].files[filename] = lastCommit
             return getFile(filename, tree)
         };
-        this.sources[schemaName].writeFile = async function(filename, content, message) {
+        this.sources[schemaName].writeFile = async (filename, content, message) => {
             let currentCommit = this.sources[schemaName].files[filename]
             await this.sources[schemaName].getFile(filename)
             let lastCommit = this.sources[schemaName].files[filename]
