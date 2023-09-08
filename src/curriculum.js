@@ -754,9 +754,17 @@ export default class Curriculum
         this.sources[schemaName].files = {}
         this.sources[schemaName].repository = repository
         this.sources[schemaName].getFile = async (filename) => {
-            let branch     = await octokit.rest.repos.getBranch({owner:owner, repo:repository, branch:branchName})
+            let branch     = await octokit.rest.repos.getBranch({
+                owner:owner, 
+                repo:repository, 
+                branch:branchName
+            })
             let lastCommit = branch.data.commit.sha
-            let tree       = await octokit.rest.git.getTree({owner:owner, repo:repository, tree_sha:lastCommit})
+            let tree       = await octokit.rest.git.getTree({
+                owner:owner, 
+                repo:repository, 
+                tree_sha:lastCommit
+            })
             this.sources[schemaName].files[filename] = lastCommit
             return getFile(filename, tree)
         };
@@ -769,7 +777,7 @@ export default class Curriculum
             }
             return octokit.rest.repos.createOrUpdateFileContents({
                 owner: owner,
-                repo: repo,
+                repo: repository,
                 path: filename,
                 message: message,
                 content: base64.encode(content)
