@@ -9,6 +9,7 @@ import fetch from 'cross-fetch'
 import fs from 'fs'
 import base64 from "base-64"
 import utf8 from "utf8"
+import JSONTag from '@muze-nl/jsontag'
 
 /**
  * Return the parent directory of a given path, without the last '/'
@@ -732,7 +733,10 @@ export default class Curriculum
             options.auth = authToken
         }
         const octokit = new Octokit(options)
-        var getFile = function(filename, list) {
+        var getFile = (filename, list, fullFile='') => {
+            if (!fullFile) {
+                fullFile = filename
+            }
             const nodes = filename.split('/');
             let node    = nodes.shift();
             let entry   = list.data.tree.filter(function(file) {
@@ -742,9 +746,11 @@ export default class Curriculum
             if (nodes.length) {
                 return octokit.rest.git
                     .getTree({owner:owner, repo:repository, tree_sha:hash})
-                    .then(list => getFile(nodes.join('/'), list))
+                    .then(list => getFile(nodes.join('/'), list, fullFile))
                 
             } else {
+                console.log('file sha', fullFile, hash)
+                this.sources[schemaName].files[fullFile] = hash
                 return octokit.rest.git
                   .getBlob({owner:owner, repo:repository, file_sha:hash})
                   .then(data => data.data)
@@ -765,23 +771,33 @@ export default class Curriculum
                 repo:repository, 
                 tree_sha:lastCommit
             })
-            this.sources[schemaName].files[filename] = lastCommit
             return getFile(filename, tree)
         };
-        this.sources[schemaName].writeFile = async (filename, content, message) => {
+        this.sources[schemaName].writeFile = async (filename, content, message, author) => {
             let currentCommit = this.sources[schemaName].files[filename]
             await this.sources[schemaName].getFile(filename)
             let lastCommit = this.sources[schemaName].files[filename]
             if (lastCommit!=currentCommit) {
                 throw new Error('file is not up to date: '+filename);
             }
-            return octokit.rest.repos.createOrUpdateFileContents({
+            console.log('sha', lastCommit, filename)
+            const params = {
                 owner: owner,
                 repo: repository,
+                branch: branchName,
                 path: filename,
                 message: message,
-                content: base64.encode(content)
-            })
+                sha: lastCommit,
+                content: base64.encode(utf8.encode(content))
+            }
+            if (author) {
+                params.author = {
+                    name: author,
+                    email: author
+                }
+            }
+            //FIXME: add new commit hash in sources...files[filename]
+            return octokit.rest.repos.createOrUpdateFileContents(params)
         }
 
         const context = await this.sources[schemaName].getFile('context.json')
