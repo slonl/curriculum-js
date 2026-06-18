@@ -22,9 +22,11 @@
     "cross-fetch": false
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "buffer": "^6.0.3",
-    "eslint": "^8.10.0",
+    "eslint": "^8.57.1",
     "events": "^3.3.0",
+    "globals": "^17.6.0",
     "https-browserify": "^1.0.0",
     "parcel": "^2.3.2",
     "process": "^0.11.10",
@@ -36,6 +38,7 @@
   },
   "dependencies": {
     "@apidevtools/json-schema-ref-parser": "^9.0.9",
+    "@muze-nl/jsontag": "^0.9.11",
     "@octokit/rest": "^18.12.0",
     "ajv": "^8.11.0",
     "ajv-formats": "^2.1.1",
