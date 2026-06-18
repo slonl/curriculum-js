@@ -213,7 +213,7 @@ export default class Curriculum
                 ajv.addSchema(this.schemas[schemaName], schemaBaseURL+schemaName+'/context.json')
             })
             var errors = {}
-            return Promise.all(Object.keys(this.schemas).map(schemaName => {
+            return Promise.allSettled(Object.keys(this.schemas).map(schemaName => {
                 // for strict testing, we must remove the '#file' entries
                 // since keywords with '#' in them are not allowed
                 let schema = this.clone(this.schemas[schemaName])
@@ -567,9 +567,20 @@ export default class Curriculum
         })
 
         let keys = Object.keys(data)
-        return Promise.all(Object.values(data))
+        return Promise.allSettled(Object.values(data))
         .then(results => {
             let values = {}
+
+            results.forEach((result, key) => {
+                let name = keys[key]
+
+                if (result.status === 'rejected') {
+                    throw result.reason
+                }
+
+                values[name] = result.value
+            })
+
             Object.keys(results).forEach(key => {
                 let name = keys[key]
                 if (typeof results[key].value !== 'undefined') {
