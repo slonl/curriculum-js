@@ -9,7 +9,6 @@ import fetch from 'cross-fetch'
 import fs from 'fs'
 import base64 from "base-64"
 import utf8 from "utf8"
-import JSONTag from '@muze-nl/jsontag'
 
 /**
  * Return the parent directory of a given path, without the last '/'

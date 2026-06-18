@@ -38,7 +38,6 @@
   },
   "dependencies": {
     "@apidevtools/json-schema-ref-parser": "^9.0.9",
-    "@muze-nl/jsontag": "^0.9.11",
     "@octokit/rest": "^18.12.0",
     "ajv": "^8.11.0",
     "ajv-formats": "^2.1.1",
